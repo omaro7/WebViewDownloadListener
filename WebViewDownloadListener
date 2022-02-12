@@ -1,0 +1,56 @@
+mWebView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                try {
+
+                    String encodedDataString = url.replace("data:image/png;base64,","");
+
+                    byte[] imageAsBytes = Base64.decode(encodedDataString.getBytes(), 0);
+
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
+                    shareBitmap(bitmap, "share_" + System.currentTimeMillis()+".png");
+                                        Toast.makeText(getActivity().getApplicationContext(),"파일을 다운로드 합니다.", Toast.LENGTH_LONG).show();
+                }
+                catch (Exception e) {
+                    if (ContextCompat.checkSelfPermission(getActivity().getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                            Toast.makeText(getActivity().getBaseContext(), "파일 다운로드 권한을 허용해주십시오.", Toast.LENGTH_LONG).show();
+                            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1004);
+                        }
+                        else {
+                            Toast.makeText(getActivity().getBaseContext(), "파일 다운로드 권한을 허용해주십시오.", Toast.LENGTH_LONG).show();
+                            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1004);
+                        }
+                    }
+                }
+            }
+        });        
+        
+        
+        private void shareBitmap(Bitmap bitmap,String fileName) {
+        try {
+
+            File cachePath = new File(getContext().getCacheDir(), "share_images");
+            cachePath.mkdirs(); // don't forget to make the directory
+
+            File file = new File(cachePath, fileName + ".png");
+            FileOutputStream fOut = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+            file.setReadable(true, false);
+
+            Uri uri = FileProvider.getUriForFile(getContext(), getActivity().getPackageName() + ".provider", file);
+
+            final Intent shareIntent = new Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            shareIntent.setType("image/png");
+            getContext().startActivity(Intent.createChooser(shareIntent, "공유하기"));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
